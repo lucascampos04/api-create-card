@@ -4,6 +4,7 @@ import jakarta.persistence.*;
 import lombok.*;
 
 import java.math.BigDecimal;
+import java.time.Instant;
 import java.time.LocalDateTime;
 
 @Entity
@@ -31,4 +32,5 @@ public class CardTransaction {
     private LocalDateTime horario;
     @Column(name = "status")
     private String status;
+    private LocalDateTime ultimaValidacao;
 }
