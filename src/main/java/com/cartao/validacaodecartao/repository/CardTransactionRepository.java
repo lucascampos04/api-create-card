@@ -10,4 +10,6 @@ import java.util.Optional;
 @Repository
 public interface CardTransactionRepository extends JpaRepository<CardTransaction, Long> {
     Optional<CardTransaction> findTopByNumeroDoCartaoOrderByUltimaValidacaoDesc(String numeroCartao);
+
+    boolean existsByNumeroDoCartaoAndUltimaValidacaoIsNotNull(String numeroDoCartao);
 }

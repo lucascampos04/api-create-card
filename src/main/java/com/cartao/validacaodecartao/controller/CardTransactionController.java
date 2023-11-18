@@ -2,8 +2,8 @@ package com.cartao.validacaodecartao.controller;
 
 import com.cartao.validacaodecartao.Service.CardTransactionService;
 import com.cartao.validacaodecartao.entity.CardTransaction;
-import org.apache.catalina.authenticator.SavedRequest;
 import org.springframework.beans.factory.annotation.Autowired;
+import org.springframework.http.ResponseEntity;
 import org.springframework.web.bind.annotation.*;
 
 import java.util.List;
@@ -25,9 +25,19 @@ public class CardTransactionController {
         return cardTransactionService.getTransactionById(id);
     }
 
-    @PostMapping
+    @PostMapping("/validate")
     public CardTransaction saveTransaction(@RequestBody CardTransaction cardTransaction){
         return cardTransactionService.saveTransaction(cardTransaction);
+    }
+
+    @PostMapping("/register")
+    public ResponseEntity<String> registerCard(@RequestBody CardTransaction cardTransaction){
+        try{
+            CardTransaction saveTransaction = cardTransactionService.cadastrarCartao(cardTransaction);
+            return ResponseEntity.ok("Cartão cadastrado com sucesso");
+        } catch (RuntimeException e){
+            return ResponseEntity.badRequest().body("Erro ao cadastrar o cartão : "+ e.getMessage());
+        }
     }
 
     @DeleteMapping("/{id}")

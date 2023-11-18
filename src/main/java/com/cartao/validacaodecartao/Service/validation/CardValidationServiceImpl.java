@@ -1,6 +1,7 @@
 package com.cartao.validacaodecartao.Service.validation;
 
 import com.cartao.validacaodecartao.entity.CardTransaction;
+import com.cartao.validacaodecartao.exception.ValidacaoExcpetion;
 import com.cartao.validacaodecartao.repository.CardTransactionRepository;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.stereotype.Service;
@@ -20,14 +21,26 @@ public class CardValidationServiceImpl implements CardValidationService {
             Optional<CardTransaction> ultimaTransacao = cardTransactionRepository.findTopByNumeroDoCartaoOrderByUltimaValidacaoDesc(numeroCartao);
 
             if (ultimaTransacao.isPresent()) {
-                LocalDateTime umaSemanaAtras = LocalDateTime.now().minusWeeks(1);
-                LocalDateTime ultimaValidacaoTransacao = ultimaTransacao.get().getUltimaValidacao();
-                System.out.println("Cartão validado");
-                return ultimaValidacaoTransacao == null || ultimaValidacaoTransacao.isBefore(umaSemanaAtras);
+                CardTransaction ultimaTransacaoCartao = ultimaTransacao.get();
+
+                if ("Verificado".equals(ultimaTransacaoCartao.getStatus())) {
+                    throw new ValidacaoExcpetion("Erro, cartão já verificado, tente novamente daqui uma semana");
+                }
+
+                if (ultimaTransacaoCartao.getUltimaValidacao() != null) {
+                    LocalDateTime umaSemanaAtras = LocalDateTime.now().minusWeeks(1);
+                    LocalDateTime ultimaValidacaoTransacao = ultimaTransacaoCartao.getUltimaValidacao();
+
+                    if (ultimaValidacaoTransacao.isAfter(umaSemanaAtras)) {
+                        return true;
+                    }
+                }
             }
-        } catch (Exception e) {
-            System.out.println("Erro ao validar o cartão: " + e.getMessage());
+
+        } catch (Exception ex) {
+            throw new ValidacaoExcpetion("Erro ao validar o cartão: " + ex.getMessage());
         }
-        return true;
+        return false;
     }
 }
+

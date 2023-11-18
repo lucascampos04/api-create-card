@@ -32,5 +32,7 @@ public class CardTransaction {
     private LocalDateTime horario;
     @Column(name = "status")
     private String status;
+
     private LocalDateTime ultimaValidacao;
+
 }
