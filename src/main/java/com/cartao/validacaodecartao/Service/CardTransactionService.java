@@ -1,6 +1,5 @@
-package com.cartao.validacaodecartao.Service;
+package com.cartao.validacaodecartao.Service.validation;
 
-import com.cartao.validacaodecartao.Service.validation.CardValidationService;
 import com.cartao.validacaodecartao.entity.CardTransaction;
 import com.cartao.validacaodecartao.exception.ValidacaoExcpetion;
 import com.cartao.validacaodecartao.repository.CardTransactionRepository;
@@ -8,56 +7,39 @@ import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.stereotype.Service;
 
 import java.time.LocalDateTime;
-import java.util.List;
 import java.util.Optional;
 
 @Service
-public class CardTransactionService {
+public class CardValidationServiceImpl {
+
     @Autowired
     private CardTransactionRepository cardTransactionRepository;
 
-    @Autowired
-    private CardValidationService cardValidationService;
-
-    public List<CardTransaction> getAllTransactions() {
-        return cardTransactionRepository.findAll();
-    }
-
-    public Optional<CardTransaction> getTransactionById(Long id) {
-        return cardTransactionRepository.findById(id);
-    }
-
-    public CardTransaction saveTransaction(CardTransaction cardTransaction) {
+    @Override
+    public boolean isOneWeekPassedValidation(String numeroCartao, LocalDateTime ultimaValidacao) {
         try {
-            if (cardValidationService.isOneWeekPassedValidation(cardTransaction.getNumeroDoCartao(), cardTransaction.getUltimaValidacao())) {
-                cardTransaction.setUltimaValidacao(LocalDateTime.now());
-                CardTransaction savedTransaction = cardTransactionRepository.save(cardTransaction);
-                System.out.println("Foi");
-                return savedTransaction;
-            } else {
-                throw new ValidacaoExcpetion("Apenas uma validação por semana é permitida || Caso esteja tentando cadastrar um cartão a url correta é : /register");
+            Optional<CardTransaction> ultimaTransacao = cardTransactionRepository.findTopByNumeroDoCartaoOrderByUltimaValidacaoDesc(numeroCartao);
+
+            if (ultimaTransacao.isPresent()) {
+                CardTransaction ultimaTransacaoCartao = ultimaTransacao.get();
+
+                if ("Verificado".equals(ultimaTransacaoCartao.getStatus())) {
+                    throw new ValidacaoExcpetion("Erro, cartão já verificado, tente novamente daqui uma semana");
+                }
+
+                if (ultimaTransacaoCartao.getUltimaValidacao() != null) {
+                    LocalDateTime umaSemanaAtras = LocalDateTime.now().minusWeeks(1);
+                    LocalDateTime ultimaValidacaoTransacao = ultimaTransacaoCartao.getUltimaValidacao();
+
+                    if (ultimaValidacaoTransacao.isAfter(umaSemanaAtras)) {
+                        return true;
+                    }
+                }
             }
-        } catch (ValidacaoExcpetion e) {
-            System.out.println("Erro de validação: " + e.getMessage());
-            throw e;
-        } catch (Exception e) {
-            System.out.println("Erro ao salvar a transação: " + e.getMessage());
-            return null;
-        }
-    }
 
-    public CardTransaction cadastrarCartao(CardTransaction cardTransaction) {
-        try {
-            CardTransaction savedTransaction = cardTransactionRepository.save(cardTransaction);
-            System.out.println("Cartão cadastrado com sucesso");
-            return savedTransaction;
-        } catch (Exception e) {
-            System.out.println("Erro ao cadastrar o cartão: " + e.getMessage());
-            return null;
+        } catch (Exception ex) {
+            throw new ValidacaoExcpetion("Erro ao validar o cartão: " + ex.getMessage());
         }
-    }
-
-    public void deleteTransaction(Long id) {
-        cardTransactionRepository.deleteById(id);
+        return false;
     }
 }
